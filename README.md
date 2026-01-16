@@ -1,4 +1,4 @@
-# redis acq400
+# CUSTOM_REDIS
 ## Compiling
 This uses Nix to contain the cross-compilation environment.
 
