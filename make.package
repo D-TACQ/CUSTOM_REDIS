@@ -1,0 +1,30 @@
+#!/bin/bash
+# live_top : live (unrestricted) Time Of Pulse
+DC=$(date +%y%m%d%H%M)
+SEQ=99
+PKG=custom_redis
+PACKAGES=../../PACKAGES
+
+
+rm -Rf opkg/*
+mkdir -p \
+	opkg/usr/local/bin \
+	opkg/usr/local/init
+
+cp port_4210_to_redis.py opkg/usr/local/bin
+
+cat - <<EOF >opkg/usr/local/init/custom_redis.init
+#!/bin/sh
+echo loading custom_redis
+EOF2
+EOF
+
+chmod a+rx opkg/usr/local/init/custom_redis.init
+
+mkdir -p release
+
+tar cvzf release/${SEQ}-${PKG}-${DC}.tgz -C opkg .
+ls -l release/${SEQ}-${PKG}-${DC}.tgz
+rm -f ${PACKAGES}/${SEQ}-${PKG}*
+cp release/${SEQ}-${PKG}-${DC}.tgz ${PACKAGES}
+
