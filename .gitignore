@@ -3,6 +3,8 @@ result
 redis-acq400
 *.png
 *.bin
+opkg
+release
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
