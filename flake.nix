@@ -35,5 +35,24 @@
           cp zynq-hello $out/bin/
         '';
       };
+
+      # definition of interactive development environment
+      devShells.${buildPlatform}.default = crossPkgs.mkShell {
+        # Pull in cross-compiler and zlib from package defined above
+        inputsFrom = [ self.packages.${buildPlatform}.default ];
+
+        # Add extra development tools here that aren't for final build
+        # e.g. language server for editor
+        nativeBuildInputs = [
+          pkgs.clang-tools # provides clangd
+          pkgs.file        # useful for checking compiled binary
+        ];
+
+        # A welcome message so we know we're in the right place
+        shellHook = ''
+          echo "Zynq Cross-Compilation Environment Loaded."
+          echo "Compiler set to: $CC"
+        '';
+      };
     };
 }
