@@ -41,12 +41,15 @@
           pkgs.gnumake
           pkgs.clang-tools # provides clangd
           pkgs.file        # useful for checking compiled binary
+          pkgs.qemu        # run ARM binaries on x86
         ];
 
         # A welcome message so we know we're in the right place
         shellHook = ''
           echo "Zynq Cross-Compilation Environment Loaded."
           echo "Compiler set to: $CC"
+          echo "Run 'make' to build."
+          echo "Run 'qemu-arm ./zynq-hello' to test ARM binary on x86 host."
         '';
       };
     };
