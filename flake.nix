@@ -1,5 +1,5 @@
 {
-  description = "Cross-compiled C program for Zynq-7000";
+  description = "Cross-compiled C program for redis for acq400 on Zynq-7000";
   inputs = {
     # We are pulling from unstable channel to get the latest tools
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -17,7 +17,7 @@
       crossPkgs = pkgs.pkgsCross.armv7l-hf-multiplatform.pkgsStatic;
     in {
       packages.${buildPlatform}.default = crossPkgs.stdenv.mkDerivation {
-        pname = "zynq-hello";
+        pname = "redis-acq400";
         version = "0.1.0";
 
         # Source code is current directory
@@ -70,7 +70,7 @@
           echo "Zynq Cross-Compilation Environment Loaded."
           echo "Compiler set to: $CC"
           echo "Run 'make' to build."
-          echo "Run 'qemu-arm ./zynq-hello' to test ARM binary on x86 host."
+          echo "Run 'qemu-arm ./redis-acq400' to test ARM binary on x86 host."
         '';
       };
     };

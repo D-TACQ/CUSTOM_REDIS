@@ -4,7 +4,7 @@
 CFLAGS += -Wall -O2
 LDFLAGS += -lz -lhiredis
 
-TARGET = zynq-hello
+TARGET = redis-acq400
 
 # default rule run by standard 'make' or Nix's default buildPhase
 all: $(TARGET)

@@ -29,7 +29,7 @@ To build the project simply type:
 nix build
 ```
 
-You'll find the compiled binary at `result/bin/hello-zynq`.
+You'll find the compiled binary at `result/bin/redis-acq400`.
 
 
 
@@ -41,12 +41,12 @@ From here you can run traditional `make`, `make clean` commands to do things.
 
 You can also test the compiled binary on the host as qemu is installed and can run ARM binaries:
 ```
-qemu-arm ./zynq-hello
+qemu-arm ./redis-acq400
 ```
 
 
 Send the compiled binary to the UUT with:
 ```
-scp result/bin/hello-zynq root@$UUT:/mnt/local
+scp result/bin/redis-acq400 root@$UUT:/mnt/local
 ```
 
