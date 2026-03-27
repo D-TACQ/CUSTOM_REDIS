@@ -39,7 +39,7 @@ nix develop
 ```
 From here you can run traditional `make`, `make clean` commands to do things.
 
-You can also test the compiled binary on the host as qemu is installed and can run ARM binaries:
+From the interactive development shell you can also test the compiled binary on the host as qemu is installed within it and can run ARM binaries:
 ```
 qemu-arm ./redis-acq400
 ```
@@ -49,4 +49,7 @@ Send the compiled binary to the UUT with:
 ```
 scp result/bin/redis-acq400 root@$UUT:/mnt/local
 ```
-
+You can then run an in-situ test with:
+```
+/mnt/local/redis-acq400
+```
