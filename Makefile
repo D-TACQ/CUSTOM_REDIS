@@ -2,7 +2,7 @@
 # Nix will automagically inject the correct cross-compiler into the $CC env variable
 
 CFLAGS += -Wall -O2
-LDFLAGS += -lz
+LDFLAGS += -lz -lhiredis
 
 TARGET = zynq-hello
 

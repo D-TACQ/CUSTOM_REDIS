@@ -23,7 +23,28 @@
         # Source code is current directory
         src = ./.;
         # Fetch and cross-compile zlib to static arm and expose headers/libs to your compiler
-        buildInputs = [ crossPkgs.zlib ];
+        buildInputs = [
+          crossPkgs.zlib
+          (crossPkgs.hiredis.overrideAttrs (old: {
+            # Ignore the default Make targets and ONLY build the static library
+            buildPhase = ''
+              make static
+            '';
+            
+            # 2. Ignore the default 'make install' (which tries to install the broken .so)
+            #    and manually copy the headers and static library ourselves.
+            installPhase = ''
+              mkdir -p $out/include/hiredis
+              mkdir -p $out/lib
+              
+              # Grab all the header files
+              cp *.h $out/include/hiredis/
+              
+              # Grab our successfully built static library
+              cp libhiredis.a $out/lib/
+            '';
+          }))
+        ];
 
         makeFlags = [ "PREFIX=${placeholder "out"}" ];
         # buildPhase and installPhase are gone
