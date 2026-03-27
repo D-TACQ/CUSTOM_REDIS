@@ -14,7 +14,7 @@
       pkgs = import nixpkgs { system = buildPlatform; };
       
       # Import cross-compilation package for 32-bit ARM
-      crossPkgs = pkgs.pkgsCross.armv7l-hf-multiplatform;
+      crossPkgs = pkgs.pkgsCross.armv7l-hf-multiplatform.pkgsStatic;
     in {
       packages.${buildPlatform}.default = crossPkgs.stdenv.mkDerivation {
         pname = "zynq-hello";
