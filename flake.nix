@@ -22,10 +22,12 @@
 
         # Source code is current directory
         src = ./.;
+        # Fetch and cross-compile zlib to static arm and expose headers/libs to your compiler
+        buildInputs = [ crossPkgs.zlib ];
 
         # crossPkgs.stdenv automagically sets $CC to ARM cross-compiler
         buildPhase = ''
-          $CC -o zynq-hello main.c
+          $CC -o zynq-hello main.c -lz
         '';
 
         installPhase = ''
