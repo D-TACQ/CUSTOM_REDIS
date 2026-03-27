@@ -25,15 +25,9 @@
         # Fetch and cross-compile zlib to static arm and expose headers/libs to your compiler
         buildInputs = [ crossPkgs.zlib ];
 
-        # crossPkgs.stdenv automagically sets $CC to ARM cross-compiler
-        buildPhase = ''
-          $CC -o zynq-hello main.c -lz
-        '';
-
-        installPhase = ''
-          mkdir -p $out/bin
-          cp zynq-hello $out/bin/
-        '';
+        makeFlags = [ "PREFIX=${placeholder "out"}" ];
+        # buildPhase and installPhase are gone
+        # Nix automagically runs 'make' and 'make install'
       };
 
       # definition of interactive development environment
@@ -44,6 +38,7 @@
         # Add extra development tools here that aren't for final build
         # e.g. language server for editor
         nativeBuildInputs = [
+          pkgs.gnumake
           pkgs.clang-tools # provides clangd
           pkgs.file        # useful for checking compiled binary
         ];
