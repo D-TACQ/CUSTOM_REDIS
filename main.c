@@ -8,8 +8,13 @@
 #include <hiredis/hiredis.h>
 #include <zlib.h>
 
-#define REDIS_IP_ADDR "10.12.196.123"
-#define ACQPORT 4210
+#define REVID "0.1.0"
+
+#define DEFAULT_REDIS_SERVER_PORT "6379"
+#define DEFAULT_REDIS_SERVER_IP "127.0.0.1"
+#define DEFAULT_HOSTNAME "defaulthost"
+#define DEFAULT_ACQ_PORT "4210"
+
 #define SSB 64
 #define TRANSLEN 1024
 #define CHUNK_SIZE (SSB * TRANSLEN) // 65536 bytes
@@ -52,12 +57,45 @@ void compress_and_send(redisContext *c, const unsigned char *raw_data, size_t ra
 }
 
 int main(int argc, char **argv) {
-    printf("Hello, Zynq from Nix!\n");
+    // read in environment variables for:
+    // hostname (key)
+    // subkey
+    char* redis_server_port_str = getenv("REDIS_PORT");
+    int redis_server_port;
+    if (redis_server_port_str == NULL) {
+        redis_server_port = atoi(DEFAULT_REDIS_SERVER_PORT);
+    }
+    else {
+        redis_server_port = atoi(redis_server_port_str);
+    }
+    char* redis_server_ip = getenv("REDIS_IP");
+    if (redis_server_ip == NULL) {
+        redis_server_ip = DEFAULT_REDIS_SERVER_IP;
+    }
+    char* hostname = getenv("HOSTNAME");
+    if (hostname == NULL) {
+        hostname = DEFAULT_HOSTNAME;
+        printf("default hostname used as redis key: %s\n", hostname);
+    }
+    else {
+        printf("hostname used as redis key: %s\n", hostname);
+    }
+
+    char* acq_port_str = getenv("ACQ_PORT");
+    int acq_port;
+    if (acq_port_str == NULL) {
+        acq_port = atoi(DEFAULT_ACQ_PORT);
+    }
+    else {
+        acq_port = atoi(acq_port_str);
+    }
+
+
+    printf("Hello, Zynq from Nix! %s \n", REVID);
     printf("Linked against zlib version %s\n", zlibVersion());
 
-    // --- 1. Set up Redis Connection (Remote) ---
-    int redis_port = 6379;
-    redisContext *c = redisConnect(REDIS_IP_ADDR, redis_port);
+    // Set up Redis Connection (Remote)
+    redisContext *c = redisConnect(redis_server_ip, redis_server_port);
     if (c == NULL || c->err) {
         if (c) {
             printf("Redis connection error: %s\n", c->errstr);
@@ -67,9 +105,9 @@ int main(int argc, char **argv) {
         }
         return 1;
     }
-    printf("Connected to Redis at %s:%d successfully.\n", REDIS_IP_ADDR, redis_port);
+    printf("Connected to Redis at %s:%d successfully.\n", redis_server_ip, redis_server_port);
 
-    // --- 2. Set up TCP Client (Localhost) ---
+    // Set up TCP Client (Localhost)
     int sock = 0;
     struct sockaddr_in serv_addr;
 
@@ -80,7 +118,7 @@ int main(int argc, char **argv) {
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(ACQPORT);
+    serv_addr.sin_port = htons(acq_port);
 
     // Point to localhost
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
@@ -89,17 +127,17 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    printf("Connecting to localhost:%d...\n", ACQPORT);
+    printf("Connecting to localhost:%d...\n", acq_port);
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        printf("\nConnection Failed. Is the daemon running on port %d?\n", ACQPORT);
+        printf("\nConnection Failed. Is the daemon running on port %d?\n", acq_port);
         redisFree(c);
         return -1;
     }
     
     
-    printf("Connected to localhost:%d! Receiving data...\n", ACQPORT);
+    printf("Connected to localhost:%d! Receiving data...\n", acq_port);
 
-    // --- 3. Receive Data Loop ---
+    // Receive Data Loop
     unsigned char buffer[CHUNK_SIZE];
     int bytes_in_buffer = 0;
 
