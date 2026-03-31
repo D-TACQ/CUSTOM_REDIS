@@ -53,3 +53,10 @@ You can then run an in-situ test with:
 ```
 /mnt/local/redis-acq400
 ```
+
+You need to define the redis server IP address and port you are trying to connect to from the client.
+This is done using environment variables whilst calling the program like:
+```
+HOSTNAME=$HOSTNAME REDIS_IP=10.12.196.123 REDIS_PORT=6379 ./redis-acq400
+```
+The `$HOSTNAME` is an existing shell variable but needs passed into the C program environment.
