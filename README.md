@@ -60,3 +60,25 @@ This is done using environment variables whilst calling the program like:
 HOSTNAME=$HOSTNAME REDIS_IP=10.12.196.123 REDIS_PORT=6379 ./redis-acq400
 ```
 The `$HOSTNAME` is an existing shell variable but needs passed into the C program environment.
+
+## redis-cli
+If you have redis-cli installed you can connect to the redis server with:
+```
+redis-cli -h <host> -p <port>
+```
+
+If you don't supply a host or port number then it defaults to localhost and the default port (6379).
+
+To get all possible keys:
+```
+KEYS pattern
+
+127.0.0.1:6379> KEYS *
+```
+
+To show all values associated with a particular key (if they've been added with XADD):
+```
+XRANGE key start end [COUNT count]
+
+127.0.0.1:6379> XRANGE keyname - +
+```
