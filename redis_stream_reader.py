@@ -80,12 +80,12 @@ if __name__ == "__main__":
     print("-" * 40)
 
     # Numpy Conversion & Reshaping
-    # Convert raw bytes directly to a 1D array of uint16
-    data_1d = np.frombuffer(decompressed_payload, dtype=np.uint16)
+    # Convert raw bytes directly to a 1D array of int16
+    data_1d = np.frombuffer(decompressed_payload, dtype=np.int16)
     
     # Ensure the data cleanly divides into 16 channels
     if data_1d.size % 16 != 0:
-        print(f"Warning: Data size ({data_1d.size} uint16 values) is not perfectly divisible by 16 channels.")
+        print(f"Warning: Data size ({data_1d.size} int16 values) is not perfectly divisible by 16 channels.")
         # Truncate any dangling bytes to allow reshaping
         remainder = data_1d.size % 16
         data_1d = data_1d[:-remainder]
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         
         plt.title(f"Stream: {stream_key} | Channel {ch}")
         plt.xlabel("Sample Index")
-        plt.ylabel("Amplitude (uint16)")
+        plt.ylabel("Amplitude (int16)")
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         
