@@ -57,7 +57,7 @@ You can then run an in-situ test with:
 You need to define the redis server IP address and port you are trying to connect to from the client.
 This is done using environment variables whilst calling the program like:
 ```
-HOSTNAME=$HOSTNAME REDIS_IP=10.12.196.123 REDIS_PORT=6379 ./redis-acq400
+HOSTNAME=$HOSTNAME REDIS_IP=10.12.196.123 REDIS_PORT=6379 COMPRESS=1 ./redis-acq400
 ```
 The `$HOSTNAME` is an existing shell variable but needs passed into the C program environment.
 
@@ -81,4 +81,14 @@ To show all values associated with a particular key (if they've been added with 
 XRANGE key start end [COUNT count]
 
 127.0.0.1:6379> XRANGE keyname - +
+```
+
+## python client
+```
+# You can call the environment anything you please but I've gone for env_redis_plot
+python -m venv env_redis_plot
+source env_redis_plot/bin/activate
+pip install -r requirements.txt
+python redis_stream_reader.py --help
+redis_stream_reader.py --plot-n-chans 2 --compress 1
 ```
