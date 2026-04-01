@@ -62,7 +62,14 @@ if __name__ == "__main__":
     else:
         compressed_payload = msg_data[b'payload']
         decompressed_payload = msg_data[b'payload']
-    
+   
+    # Save the raw decompressed binary to a file for external inspection
+    bin_filename = f"{stream_key}_decompressed.bin"
+    with open(bin_filename, "wb") as f:
+        f.write(decompressed_payload)
+    print(f"Saved raw decompressed binary data to: {bin_filename}")
+
+    # print file stats
     comp_size = len(compressed_payload)
     decomp_size = len(decompressed_payload)
     print("-" * 40)
