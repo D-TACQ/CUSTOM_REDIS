@@ -23,6 +23,7 @@
 void compress_and_send(redisContext *c, char* redis_key, const unsigned char *raw_data, size_t raw_len) {
     if (redis_key == NULL || strlen(redis_key) == 0) {
         fprintf(stderr, "Error: Redis key is NULL or empty.\n");
+        return;
     }
     if (strlen(redis_key) > 256) {
         fprintf(stderr, "Error: Redis key is too long.\n");
@@ -102,7 +103,7 @@ void uncompressed_send(redisContext *c, char* redis_key, const unsigned char *ra
     if (xadd_reply == NULL) {
         printf("Redis XADD failed: %s\n", c->errstr);
     } else {
-        printf("Pushed %lu raw bytes (compressed to %lu bytes). Entry ID: %s\n", 
+        printf("Pushed %lu raw bytes (no compression of %lu bytes). Entry ID: %s\n",
                (unsigned long)raw_len, (unsigned long)raw_len, xadd_reply->str);
         freeReplyObject(xadd_reply);
     }
@@ -145,7 +146,7 @@ int main(int argc, char **argv) {
     }
     char* compress_p = getenv("COMPRESS");
     bool compress;
-    if (compress_p == NULL || compress_p == "0") {
+    if (compress_p == NULL || strcmp(compress_p,"0") == 0) {
         compress = false;
     }
     else {
