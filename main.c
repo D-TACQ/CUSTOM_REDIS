@@ -20,8 +20,17 @@
 #define CHUNK_SIZE (SSB * TRANSLEN) // 65536 bytes
 
 // Function to compress and send data to Redis
-void compress_and_send(redisContext *c, const unsigned char *raw_data, size_t raw_len) {
-    // 1. Prepare for compression
+void compress_and_send(redisContext *c, char* redis_key, const unsigned char *raw_data, size_t raw_len) {
+    if (redis_key == NULL || strlen(redis_key) == 0) {
+        fprintf(stderr, "Error: Redis key is NULL or empty.\n");
+    }
+    if (strlen(redis_key) > 256) {
+        fprintf(stderr, "Error: Redis key is too long.\n");
+        return;
+    }
+
+
+    // Prepare for compression
     uLongf compressed_len = compressBound(raw_len);
     unsigned char *compressed_data = (unsigned char *)malloc(compressed_len);
     
@@ -30,7 +39,7 @@ void compress_and_send(redisContext *c, const unsigned char *raw_data, size_t ra
         return;
     }
 
-    // 2. Compress the payload
+    // Compress the payload
     int z_result = compress(compressed_data, &compressed_len, raw_data, raw_len);
     if (z_result != Z_OK) {
         printf("Zlib compression failed with code: %d\n", z_result);
@@ -38,10 +47,11 @@ void compress_and_send(redisContext *c, const unsigned char *raw_data, size_t ra
         return;
     }
 
-    // 3. Send to Redis using XADD
+    // Send to Redis using XADD
     // %b requires two arguments: pointer to data and size_t length
     redisReply *xadd_reply = redisCommand(c, 
-        "XADD ctest * payload %b", 
+        "XADD %s * payload %b",
+        redis_key,
         compressed_data, (size_t)compressed_len
     );
 
@@ -54,6 +64,50 @@ void compress_and_send(redisContext *c, const unsigned char *raw_data, size_t ra
     }
 
     free(compressed_data);
+}
+void uncompressed_send(redisContext *c, char* redis_key, const unsigned char *raw_data, size_t raw_len) {
+    if (redis_key == NULL || strlen(redis_key) == 0) {
+        fprintf(stderr, "Error: Redis key is NULL or empty.\n");
+    }
+    if (strlen(redis_key) > 256) {
+        fprintf(stderr, "Error: Redis key is too long.\n");
+        return;
+    }
+
+    // Prepare for compression
+    //uLongf compressed_len = compressBound(raw_len);
+    //unsigned char *compressed_data = (unsigned char *)malloc(compressed_len);
+    
+    //if (!compressed_data) {
+    //    printf("Memory allocation failed!\n");
+    //    return;
+    //}
+
+    // Compress the payload
+    //int z_result = compress(compressed_data, &compressed_len, raw_data, raw_len);
+    //if (z_result != Z_OK) {
+    //    printf("Zlib compression failed with code: %d\n", z_result);
+    //    free(compressed_data);
+    //    return;
+    //}
+
+    // Send to Redis using XADD
+    // %b requires two arguments: pointer to data and size_t length
+    redisReply *xadd_reply = redisCommand(c, 
+        "XADD %s * payload %b",
+        redis_key,
+        raw_data, raw_len
+    );
+
+    if (xadd_reply == NULL) {
+        printf("Redis XADD failed: %s\n", c->errstr);
+    } else {
+        printf("Pushed %lu raw bytes (compressed to %lu bytes). Entry ID: %s\n", 
+               (unsigned long)raw_len, (unsigned long)raw_len, xadd_reply->str);
+        freeReplyObject(xadd_reply);
+    }
+
+    //free(compressed_data);
 }
 
 int main(int argc, char **argv) {
@@ -88,6 +142,14 @@ int main(int argc, char **argv) {
     }
     else {
         acq_port = atoi(acq_port_str);
+    }
+    char* compress_p = getenv("COMPRESS");
+    bool compress;
+    if (compress_p == NULL || compress_p == "0") {
+        compress = false;
+    }
+    else {
+        compress = true;
     }
 
 
@@ -159,7 +221,12 @@ int main(int argc, char **argv) {
 
         // Once the buffer is exactly full, compress and push
         if (bytes_in_buffer == CHUNK_SIZE) {
-            compress_and_send(c, buffer, CHUNK_SIZE);
+            if (compress) {
+                compress_and_send(c, hostname,  buffer, CHUNK_SIZE);
+            }
+            else {
+                uncompressed_send(c, hostname, buffer, CHUNK_SIZE);
+            }
             bytes_in_buffer = 0; // Reset for the next chunk
         }
     }
