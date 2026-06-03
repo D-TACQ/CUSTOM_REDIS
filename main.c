@@ -7,6 +7,9 @@
 #include <arpa/inet.h>
 #include <hiredis/hiredis.h>
 #include <zlib.h>
+#include <time.h>     // for clock_gettime, CLOCK_REALTIME
+#include <stdint.h>   // for uint64_t
+#include <inttypes.h> // for PRIu64
 
 #define REVID "0.1.1"
 
@@ -19,6 +22,51 @@
 #define TRANSLEN 1024
 #define CHUNK_SIZE (SSB * TRANSLEN) // 65536 bytes
 
+void get_redis_stream_id(char *out_buf, size_t buf_len)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+        exit(1);
+    }
+
+    // How many full milliseconds are hidden in the nanosecond part?
+    uint64_t ms_from_nsec = (uint64_t)ts.tv_nsec/ 1000000ULL;
+
+    // Total milliseconds since epoch and leftover ns
+    uint32_t ns_within_ms = (uint32_t)ts.tv_nsec - ((uint32_t)ms_from_nsec * 1000000U);
+    uint64_t milliseconds = ((uint64_t)ts.tv_sec * 1000ULL) + ms_from_nsec;
+
+    // Print to string buffer in the <ms>-<ns> format
+    // Use %06 to zero-pad the nanoseconds
+    // to keep the stream IDs a consisten string length
+    
+    // snprintf(stream_id, 32, "%" PRIu64 "-%06" PRIu32 "\n", milliseconds, ns_within_ms);
+    // Make sure you don't put a newline or carriage return at end of ID string!
+    snprintf(out_buf, buf_len, "%" PRIu64 "-%06" PRIu32, milliseconds, ns_within_ms);
+}
+
+void print_redis_stream_id(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+        exit(1);
+    }
+
+    // How many full milliseconds are hidden in the nanosecond part?
+    uint64_t ms_from_nsec = (uint64_t)ts.tv_nsec/ 1000000ULL;
+
+    // Total milliseconds since epoch and leftover ns
+    uint32_t ns_within_ms = (uint32_t)ts.tv_nsec - ((uint32_t)ms_from_nsec * 1000000U);
+    uint64_t milliseconds = ((uint64_t)ts.tv_sec * 1000ULL) + ms_from_nsec;
+
+    // Print to string buffer in the <ms>-<ns> format
+    // Use %06 to zero-pad the nanoseconds
+    // to keep the stream IDs a consisten string length
+    
+    // snprintf(stream_id, 32, "%" PRIu64 "-%06" PRIu32 "\n", milliseconds, ns_within_ms);
+    // Make sure you don't put a newline or carriage return at end of ID string!
+    fprintf(stderr, "%" PRIu64 "-%06" PRIu32 "\n", milliseconds, ns_within_ms);
+}
 // Function to compress and send data to Redis
 void compress_and_send(redisContext *c, char* redis_key, const unsigned char *raw_data, size_t raw_len) {
     if (redis_key == NULL || strlen(redis_key) == 0) {
@@ -71,7 +119,10 @@ void compress_and_send(redisContext *c, char* redis_key, const unsigned char *ra
 
     free(compressed_data);
 }
-void uncompressed_send(redisContext *c, char* redis_key, const unsigned char *raw_data, size_t raw_len) {
+void uncompressed_send(redisContext *c, char* redis_key, 
+        char* id_buf, size_t id_buf_len, 
+        const unsigned char *raw_data, size_t raw_len) 
+{
     if (redis_key == NULL || strlen(redis_key) == 0) {
         fprintf(stderr, "Error: Redis key is NULL or empty.\n");
     }
@@ -99,17 +150,24 @@ void uncompressed_send(redisContext *c, char* redis_key, const unsigned char *ra
 
     // Send to Redis using XADD
     // %b requires two arguments: pointer to data and size_t length
+    
+    //redisReply *xadd_reply = redisCommand(c, 
+    //    "XADD %s * payload %b",
+    //    redis_key,
+    //    raw_data, raw_len
+    //);
+    get_redis_stream_id(id_buf, id_buf_len);
     redisReply *xadd_reply = redisCommand(c, 
-        "XADD %s * payload %b",
+        "XADD %s %s payload %b",
         redis_key,
+        id_buf,
         raw_data, raw_len
     );
-
     if (xadd_reply == NULL) {
         fprintf(stderr, "Redis XADD failed: %s\n", c->errstr);
     } else {
-        fprintf(stderr, "Pushed %lu raw bytes (no compression of %lu bytes). Entry ID: %s\n",
-               (unsigned long)raw_len, (unsigned long)raw_len, xadd_reply->str);
+        fprintf(stderr, "Pushed %lu raw bytes (no compression of %lu bytes). Supplied Entry ID: %s  Entry ID: %s\n",
+               (unsigned long)raw_len, (unsigned long)raw_len, id_buf, xadd_reply->str);
         /* Add the new code to write to stdout here
          *
          */
@@ -121,10 +179,38 @@ void uncompressed_send(redisContext *c, char* redis_key, const unsigned char *ra
     //free(compressed_data);
 }
 
+
+// TODO: how customer gets nanoseconds from their systems...
+//static uint64_t nanoseconds_since_epoch()
+//{
+//  return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+//}
+
+static uint64_t nanoseconds_since_epoch(void)
+{
+    struct timespec ts;
+    // CLOCK_REALTIME gets the system-wide real-time clock (time since epoch)
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+        // fallback or error handling if clock_gettime fails
+        return 0;
+    }
+    // Convert seconds to nanoseconds and add remaining nanoseconds
+    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
+}
+
+
 int main(int argc, char **argv) {
+    // test functions
+    uint64_t ns = nanoseconds_since_epoch();
+    fprintf(stderr, "Nanoseconds since epoch: %" PRIu64 "\n", ns);
+    fprintf(stderr, "Nanoseconds since epoch llu : %llu\n", (unsigned long long)ns);
+    print_redis_stream_id();
     // read in environment variables for:
     // REDIS_MKEY (key)
     // subkey
+    
+    char id_buffer[32];
+
     char* redis_server_port_str = getenv("REDIS_PORT");
     int redis_server_port;
     if (redis_server_port_str == NULL) {
@@ -164,11 +250,14 @@ int main(int argc, char **argv) {
     }
 
 
-    fprintf(stderr, "Hello, Zynq from Nix! %s \n", REVID);
+    fprintf(stderr, "Hello, Zynq from Nix! This is a test %s \n", REVID);
     fprintf(stderr, "Linked against zlib version %s\n", zlibVersion());
 
     // Set up Redis Connection (Remote)
     redisContext *c = redisConnect(redis_server_ip, redis_server_port);
+    uint64_t ns2 = nanoseconds_since_epoch();
+    fprintf(stderr, "Nanoseconds since epoch: %" PRIu64 "\n", ns2);
+    print_redis_stream_id();
     if (c == NULL || c->err) {
         if (c) {
            fprintf(stderr, "Redis connection error: %s\n", c->errstr);
@@ -211,14 +300,14 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Connected to localhost:%d! Receiving data...\n", acq_port);
 
     // Receive Data Loop
-    unsigned char buffer[CHUNK_SIZE];
-    int bytes_in_buffer = 0;
+    unsigned char data_buffer[CHUNK_SIZE];
+    int bytes_in_data_buffer = 0;
 
     while (1) {
         // Read data into the remaining space in our buffer
         int bytes_read = recv(sock, 
-                              buffer + bytes_in_buffer, 
-                              CHUNK_SIZE - bytes_in_buffer, 0);
+                              data_buffer + bytes_in_data_buffer, 
+                              CHUNK_SIZE - bytes_in_data_buffer, 0);
         
         if (bytes_read < 0) {
             perror("Recv error");
@@ -228,17 +317,24 @@ int main(int argc, char **argv) {
             break;
         }
 
-        bytes_in_buffer += bytes_read;
+        bytes_in_data_buffer += bytes_read;
 
+        /*
+        void uncompressed_send(redisContext *c, char* redis_key, 
+                               char* id_buf, size_t id_buf_len, 
+                               const unsigned char *raw_data, size_t raw_len) 
+        */
+        
         // Once the buffer is exactly full, compress and push
-        if (bytes_in_buffer == CHUNK_SIZE) {
+        if (bytes_in_data_buffer == CHUNK_SIZE) {
             if (compress) {
-                compress_and_send(c, mkey,  buffer, CHUNK_SIZE);
+                compress_and_send(c, mkey,  data_buffer, CHUNK_SIZE);
             }
             else {
-                uncompressed_send(c, mkey, buffer, CHUNK_SIZE);
+                get_redis_stream_id(id_buffer, sizeof(id_buffer));
+                uncompressed_send(c, mkey, id_buffer, sizeof(id_buffer), data_buffer, CHUNK_SIZE);
             }
-            bytes_in_buffer = 0; // Reset for the next chunk
+            bytes_in_data_buffer = 0; // Reset for the next chunk
         }
     }
 

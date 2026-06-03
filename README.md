@@ -44,6 +44,7 @@ From the interactive development shell you can also test the compiled binary on 
 qemu-arm ./redis-acq400
 ```
 
+## Running a test
 
 Send the compiled binary to the UUT with:
 ```
@@ -60,6 +61,17 @@ This is done using environment variables whilst calling the program like:
 HOSTNAME=$HOSTNAME REDIS_IP=10.12.196.123 REDIS_PORT=6379 COMPRESS=1 ./redis-acq400
 ```
 The `$HOSTNAME` is an existing shell variable but needs passed into the C program environment.
+
+To run the redis server (so that your program has something to talk to) run:
+```
+sudo apt install redis-stack-server
+redis-stack-server
+
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+
+redis-cli
+```
 
 ## redis-cli
 If you have redis-cli installed you can connect to the redis server with:
@@ -82,6 +94,10 @@ XRANGE key start end [COUNT count]
 
 127.0.0.1:6379> XRANGE keyname - +
 ```
+
+## XRM EPICS IOC integration
+The process of starting this program has been integrated with the XRM EPICS IOC.
+Operating instructions TODO.
 
 ## python client
 ```
