@@ -99,7 +99,7 @@ void compress_and_send(redisContext *c, char* redis_key, const unsigned char *ra
     // Send to Redis using XADD
     // %b requires two arguments: pointer to data and size_t length
     redisReply *xadd_reply = redisCommand(c, 
-        "XADD %s * payload %b",
+        "XADD %s * _ %b",
         redis_key,
         compressed_data, (size_t)compressed_len
     );
@@ -152,13 +152,13 @@ void uncompressed_send(redisContext *c, char* redis_key,
     // %b requires two arguments: pointer to data and size_t length
     
     //redisReply *xadd_reply = redisCommand(c, 
-    //    "XADD %s * payload %b",
+    //    "XADD %s * _ %b",
     //    redis_key,
     //    raw_data, raw_len
     //);
     get_redis_stream_id(id_buf, id_buf_len);
     redisReply *xadd_reply = redisCommand(c, 
-        "XADD %s %s payload %b",
+        "XADD %s %s _ %b",
         redis_key,
         id_buf,
         raw_data, raw_len
