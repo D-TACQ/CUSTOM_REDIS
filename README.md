@@ -52,9 +52,15 @@ From the interactive development shell you can also test the compiled binary on 
 qemu-arm ./redis-acq400
 ```
 
-## Running a test
+### Deploy the package
+Run `make.package` to create a tarball release under `release/`.
 
-Send the compiled binary to the UUT with:
+Use scp to send the file under `release/*.tar.gz` to the target UUT.
+
+Reboot the UUT and the package will be loaded automatically.
+
+## Running a test
+If you'd like to run a test without deploying a package, then send the compiled binary to the UUT with:
 ```
 scp result/bin/redis-acq400 root@$UUT:/mnt/local
 ```
@@ -63,7 +69,6 @@ You can then run an in-situ test with:
 $ ssh root@$UUT
 $ /mnt/local/redis-acq400
 ```
-
 
 ## configuring the program
 You need to define the redis server IP address and port you are trying to connect to from the client.
