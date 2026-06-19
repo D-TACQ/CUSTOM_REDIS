@@ -10,6 +10,7 @@
 #include <time.h>     // for clock_gettime, CLOCK_REALTIME
 #include <stdint.h>   // for uint64_t
 #include <inttypes.h> // for PRIu64
+#include <libgen.h>  // for basename()
 
 #define REVID "0.1.1"
 
@@ -21,6 +22,8 @@
 #define SSB 64
 #define TRANSLEN 1024
 #define CHUNK_SIZE (SSB * TRANSLEN) // 65536 bytes
+
+static int verbose;
 
 void get_redis_stream_id(char *out_buf, size_t buf_len)
 {
@@ -107,8 +110,8 @@ void compress_and_send(redisContext *c, char* redis_key, const unsigned char *ra
     if (xadd_reply == NULL) {
         fprintf(stderr, "Redis XADD failed: %s\n", c->errstr);
     } else {
-        fprintf(stderr, "Pushed %lu raw bytes (compressed to %lu bytes). Entry ID: %s\n", 
-               (unsigned long)raw_len, (unsigned long)compressed_len, xadd_reply->str);
+        if (verbose) fprintf(stderr, "Pushed %lu raw bytes (compressed to %lu bytes). Entry ID: %s\n", 
+                             (unsigned long)raw_len, (unsigned long)compressed_len, xadd_reply->str);
         /* Add the new code to write to stdout here
          *
          */
@@ -166,8 +169,8 @@ void uncompressed_send(redisContext *c, char* redis_key,
     if (xadd_reply == NULL) {
         fprintf(stderr, "Redis XADD failed: %s\n", c->errstr);
     } else {
-        fprintf(stderr, "Pushed %lu raw bytes (no compression of %lu bytes). Supplied Entry ID: %s  Entry ID: %s\n",
-               (unsigned long)raw_len, (unsigned long)raw_len, id_buf, xadd_reply->str);
+        if (verbose) fprintf(stderr, "Pushed %lu raw bytes (no compression of %lu bytes). Supplied Entry ID: %s  Entry ID: %s\n",
+                             (unsigned long)raw_len, (unsigned long)raw_len, id_buf, xadd_reply->str);
         /* Add the new code to write to stdout here
          *
          */
@@ -200,6 +203,19 @@ static uint64_t nanoseconds_since_epoch(void)
 
 
 int main(int argc, char **argv) {
+
+    char *progname = basename(argv[0]);
+    if (strcmp(progname, "redis-acq400") == 0) {
+        verbose = 0;
+    }
+    else {
+        verbose = 1;
+    }
+
+    if (verbose)
+        fprintf(stderr, "Verbose mode enabled\n");
+
+
     // test functions
     uint64_t ns = nanoseconds_since_epoch();
     fprintf(stderr, "Nanoseconds since epoch: %" PRIu64 "\n", ns);
