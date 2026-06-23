@@ -1,0 +1,25 @@
+#!/bin/bash
+# redis_acq400 : redis client for ACQ400
+DC=$(date +%y%m%d%H%M)
+SEQ=99
+PKG=redis_acq400
+PACKAGES=../../PACKAGES
+
+
+rm -Rf opkg/*
+mkdir -p \
+	opkg/usr/local/bin \
+	opkg/usr/local/init \
+	opkg/usr/local/CARE
+
+cp -r result/bin/* opkg/usr/local/bin
+cp -r init/* opkg/usr/local/init
+cp -r CARE/* opkg/usr/local/CARE
+# cp livetop opkg/usr/local/bin
+
+mkdir -p release
+
+tar cvzf release/${SEQ}-${PKG}-${DC}.tgz -C opkg .
+ls -l release/${SEQ}-${PKG}-${DC}.tgz
+rm -f ${PACKAGES}/${SEQ}-${PKG}*
+

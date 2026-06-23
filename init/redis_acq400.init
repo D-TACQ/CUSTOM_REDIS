@@ -1,0 +1,2 @@
+echo ++load redis_acq400
+echo $(ls -l /usr/local/bin/redis-acq400)
