@@ -1,23 +1,21 @@
 #!/bin/bash
-# live_top : live (unrestricted) Time Of Pulse
+# redis_acq400 : redis client for ACQ400
 DC=$(date +%y%m%d%H%M)
 SEQ=99
 PKG=custom_redis
-PACKAGES=../../PACKAGES
-
 
 rm -Rf opkg/*
 mkdir -p \
 	opkg/usr/local/bin \
 	opkg/usr/local/init
+	opkg/usr/local/init \
+	opkg/usr/local/CARE
+
+cp -r result/bin/* opkg/usr/local/bin
+cp -r init/* opkg/usr/local/init
+cp -r CARE/* opkg/usr/local/CARE
 
 cp port_4210_to_redis.py opkg/usr/local/bin
-
-cat - <<EOF >opkg/usr/local/init/custom_redis.init
-#!/bin/sh
-echo loading custom_redis
-EOF2
-EOF
 
 chmod a+rx opkg/usr/local/init/custom_redis.init
 
@@ -27,4 +25,3 @@ tar cvzf release/${SEQ}-${PKG}-${DC}.tgz -C opkg .
 ls -l release/${SEQ}-${PKG}-${DC}.tgz
 rm -f ${PACKAGES}/${SEQ}-${PKG}*
 cp release/${SEQ}-${PKG}-${DC}.tgz ${PACKAGES}
-

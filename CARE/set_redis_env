@@ -1,0 +1,3 @@
+#!/usr/bin/sh
+
+echo "set env vars in /mnt/local/sysconfig/xrm_epics.sh"

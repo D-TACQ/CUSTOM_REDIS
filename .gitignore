@@ -1,3 +1,8 @@
+result
+*.o
+redis-acq400
+*.png
+*.bin
 opkg
 release
 
