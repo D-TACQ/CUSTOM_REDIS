@@ -13,6 +13,8 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=6379, help="Redis server port (default: 6379)")
     parser.add_argument("--plot-n-chans", type=int, default=1, help="Number of channels to plot (default: 1)")
     parser.add_argument("--compressed", type=int, default=0, help="Is channel compressed (default: 0)")
+    parser.add_argument("--n-messages", type=int, default=1, help="Number of messages to retrieve (default: 1)")
+    parser.add_argument("--payload-key", type=str, default="_", help="Payload key string (default: '_')")
 
     
     args = parser.parse_args()
@@ -22,6 +24,8 @@ if __name__ == "__main__":
     port = args.port
     plot_n_chans = args.plot_n_chans
     compressed = args.compressed
+    n_messages = args.n_messages
+    payload_key = bytes(args.payload_key, "utf-8")
     db = 0
 
     # decode_responses must be False for raw binary payloads
@@ -36,7 +40,7 @@ if __name__ == "__main__":
 
     # Fetch the single most recent message using XREVRANGE
     # Returns format: [(b'message_id', {b'field': b'value'})]
-    messages = r.xrevrange(stream_key, count=1)
+    messages = r.xrevrange(stream_key, count=n_messages)
 
     if not messages:
         print(f"Error: Stream '{stream_key}' is empty or does not exist.")
@@ -46,12 +50,12 @@ if __name__ == "__main__":
     msg_id, msg_data = messages[0]
     
     # Extract the payload (keys are bytes because decode_responses=False)
-    if b'payload' not in msg_data:
-        print("Error: Could not find 'payload' field in the stream record.")
+    if payload_key not in msg_data:
+        print(f"Error: Could not find '{payload_key}' field in the stream record.")
         sys.exit(1)
     
     if compressed:
-        compressed_payload = msg_data[b'payload']
+        compressed_payload = msg_data[payload_key]
     
         # Decompression & Size Reporting
         try:
@@ -60,8 +64,8 @@ if __name__ == "__main__":
             print(f"Error decompressing payload: {e}")
             sys.exit(1)
     else:
-        compressed_payload = msg_data[b'payload']
-        decompressed_payload = msg_data[b'payload']
+        compressed_payload = msg_data[payload_key]
+        decompressed_payload = msg_data[payload_key]
    
     # Save the raw decompressed binary to a file for external inspection
     bin_filename = f"{stream_key}_decompressed.bin"
